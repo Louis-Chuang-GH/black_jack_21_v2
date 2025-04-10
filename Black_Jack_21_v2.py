@@ -2,33 +2,11 @@
 
 import random
 
-keys = ("♠A","♠2","♠3","♠4","♠5","♠6","♠7",
-       "♠8","♠9","♠10","♠J","♠Q","♠K",
-       "♥A","♥2","♥3","♥4","♥5","♥6","♥7",
-       "♥8","♥9","♥10","♥J","♥Q","♥K",
-       "♦A","♦2","♦3","♦4","♦5","♦6","♦7",
-       "♦8","♦9","♦10","♦J","♦Q","♦K",
-       "♣A","♣2","♣3","♣4","♣5","♣6","♣7",
-       "♣8","♣9","♣10","♣J","♣Q","♣K")
-
-values = (11,2,3,4,5,6,7,8,9,10,10,10,10,
-11,2,3,4,5,6,7,8,9,10,10,10,10,
-11,2,3,4,5,6,7,8,9,10,10,10,10,
-11,2,3,4,5,6,7,8,9,10,10,10,10)
-
-dc = dict(zip(keys,values))
-
-cards = []  #牌庫
-dealer = []  #莊家
-player = []  #玩家
-dealer_point = 0  #莊家點數
-player_point = 0  #玩家點數
-
-
 # 洗牌 (牌庫少於18張時會重新洗牌)
 def shuffle():
     global cards
     if len(cards) < 18:
+        print("洗牌中...")
         cards = []
         for k in keys:
             cards.append(k)
@@ -37,13 +15,17 @@ def shuffle():
     else:
         return cards
 
+# 發牌
+def deal(lst):
+    lst.append(cards.pop())
+
 # 遊戲初始
 def start():
     print("♠♥♦♣ GAME START ♠♥♦♣")
     print()
-    player.append(cards.pop())
-    dealer.append(cards.pop())
-    player.append(cards.pop())
+    deal(player)
+    deal(dealer)
+    deal(player)
 
 # 算牌
 def point(lst):
@@ -71,177 +53,138 @@ def show(lst=None):
         print("Dealer Hands:",dealer,"\t","Ponint=", dealer_point)
         print("Player Hands:",player,"\t","Ponint=", player_point)
     elif lst == player:
+        print()
         print("Player Hands:",player,"\t","Ponint=", player_point)
     elif lst == dealer:
+        print()
         print("Dealer Hands:",dealer,"\t","Ponint=", dealer_point)
-        
-        
 
-# 發牌
-def deal(lst):
-    lst.append(cards.pop())
+# 要牌
+def hit():
+    global player_point
+    deal(player)
+    player_point = point(player)
+    show(player)
+    
+    if player_point > 21:
+        opt = "surrender"
+        return opt
+    elif len(player) == 5:
+        opt = "stand"
+        return opt
+    else:
+        print()
+        opt = input("Hit or Stand or Surrender?")
+        return opt
+
+# 不要牌
+def stand():
+    global dealer_point
+    dealer_point = point(dealer)
+    show(dealer) # 掀開莊家第二張牌
+
+    while dealer_point < 17 and len(dealer) <= 5: # 未滿17點強迫莊家要牌
+        print("莊家未滿17點，強迫要牌")
+        deal(dealer)
+        dealer_point = point(dealer)
+        show(dealer)
 
 # 選擇
 def option():
-    ans = input("Hit or Stand or Surrender?")
+    global opt
+    print()
+    opt = input("Hit or Stand or Surrender?")
     while True:
-        ans = ans.strip()
-        if ans == "Hit" or "HIT" or "hit":
-            deal(player)
-            player_point = point(player)
-            show(player)
-        elif ans == "Stand" or "STAND" or "stand":
-            deal(dealer)
-            dealer_point = point(dealer)
-            show(dealer)
+        opt = opt.strip()
+        if opt.lower() == "hit":
+            opt = hit()
 
-            
-        elif ans == "Surrender" or "SURRENDER" or "surrender":
-            print("YOU LOSE")
-            break
+        elif opt.lower() == "stand":
+            stand()
+            return opt
+        
+        elif opt.lower() == "surrender":
+            return opt
+        
         else:
+            print()
             print("請輸入", "Hit(要牌) or Stand(不要牌) or Surrender(投降)")
-            ans = input("Hit or Stand or Surrender?")
-    
+            opt = input("Hit or Stand or Surrender?")
 
-cards = shuffle()
-start()
-player_point = point(player)
-dealer_point = point(dealer)
-show()
+# 判定勝負
+def win(opt):
+    if opt == "surrender":
+        print("[ YOU LOSE... ]")
+    elif opt == "stand":
+        if dealer_point > 21:
+            print("[ YOU WIN! ]")
+        elif len(player) == 5 and player_point <= 21:
+            if len(dealer) == 5:
+                print("[ =PUSH= ]")
+            else:
+                print("[ YOU WIN! ]")
+        elif len(dealer) == 5 and dealer_point <=21:
+            print("[ YOU LOSE... ]")
+        elif player_point <= 21 and dealer_point <= 21:
+            if player_point > dealer_point:
+                print("[ YOU WIN! ]")
+            elif player_point == dealer_point:
+                print("[ =PUSH= ]")
+            elif player_point < dealer_point:
+                print("[ YOU LOSE... ]")
+            else:
+                print("三層判定勝負錯誤")
+        else:
+            print("二層判定勝負錯誤")
+    else:
+        print("判定勝負錯誤")
 
-# deal()
+# 再玩一次
+def play_again():
+    ans = input("是否再玩一次? Y/N")
+    print()
+    ans = ans.strip()
+    if ans.lower() in ("yes", "y"):
+        return True
+    else:
+        return False
 
-"""
+keys = ("♠A","♠2","♠3","♠4","♠5","♠6","♠7",
+       "♠8","♠9","♠10","♠J","♠Q","♠K",
+       "♥A","♥2","♥3","♥4","♥5","♥6","♥7",
+       "♥8","♥9","♥10","♥J","♥Q","♥K",
+       "♦A","♦2","♦3","♦4","♦5","♦6","♦7",
+       "♦8","♦9","♦10","♦J","♦Q","♦K",
+       "♣A","♣2","♣3","♣4","♣5","♣6","♣7",
+       "♣8","♣9","♣10","♣J","♣Q","♣K")
 
-#發牌
-print()
-Player.append((Cards.pop()))
-Player_Point += D[Player[-1]]
-Dealer.append((Cards.pop()))
-Dealer_Point += D[Dealer[-1]]
-Player.append((Cards.pop()))
-Player_Point += D[Player[-1]]
+values = (11,2,3,4,5,6,7,8,9,10,10,10,10,
+11,2,3,4,5,6,7,8,9,10,10,10,10,
+11,2,3,4,5,6,7,8,9,10,10,10,10,
+11,2,3,4,5,6,7,8,9,10,10,10,10)
 
-print("Dealer Hands:",Dealer,"\t","Ponint=", Dealer_Point)
-print("Player Hands:",Player,"\t","Ponint=", Player_Point)
+dc = dict(zip(keys,values))
 
-#Hit要牌 / Stand不要牌 / Surrender投降
-print()
-print("Hit or Stand or Surrender?")
-Option = input()
+cards = []  #牌庫
+
 while True:
-    if Option == "Hit":
-        Player.append((Cards.pop()))
-        Player_Point += D[Player[-1]]
-        if Player_Point <= 21:
-            if len(Player) == 5:  #過五關
-                print("Player Hands:",Player,"\t","Ponint=", Player_Point)
-                Option = "Stand"
-                continue
-            print("Player Hands:",Player,"\t","Ponint=", Player_Point)
-            print("Hit or Stand or Surrender?")
-            Option = input()
-        elif Player_Point > 21:
-            if Player.count("♠A") > 0:
-                Player[Player.index("♠A")]="♠A."
-                Player_Point-= 10
-                print("Player Hands:",Player,"\t","Ponint=", Player_Point)
-                if len(Player) == 5:
-                    Option = "Stand"
-                    continue
-                print("Hit or Stand or Surrender?")
-                Option = input()
-            elif Player.count("♥A") > 0:
-                Player[Player.index("♥A")]="♥A."
-                Player_Point-= 10
-                print("Player Hands:",Player,"\t","Ponint=", Player_Point)
-                if len(Player) == 5:
-                    Option = "Stand"
-                    continue
-                print("Hit or Stand or Surrender?")
-                Option = input()
-            elif Player.count("♦A") > 0:
-                Player[Player.index("♦A")]="♦A."
-                Player_Point-= 10
-                print("Player Hands:",Player,"\t","Ponint=", Player_Point)
-                if len(Player) == 5:
-                    Option = "Stand"
-                    continue
-                print("Hit or Stand or Surrender?")
-                Option = input()
-            elif Player.count("♣A") > 0:
-                Player[Player.index("♣A")]="♣A."
-                Player_Point-= 10
-                print("Player Hands:",Player,"\t","Ponint=", Player_Point)
-                if len(Player) == 5:
-                    Option = "Stand"
-                    continue
-                print("Hit or Stand or Surrender?")
-                Option = input()
-            else:
-                print("Player Hands:",Player,"\t","Ponint=", Player_Point)
-                break
-    elif Option == "Stand":
-        while Dealer_Point < 17:  #未滿17點強迫莊家要牌
-            Dealer.append((Cards.pop()))
-            Dealer_Point += D[Dealer[-1]]
-            if Dealer_Point > 21:  #爆牌時判斷莊家是否有A
-                if Dealer.count("♠A") > 0:
-                    Dealer[Dealer.index("♠A")]="♠A."
-                    Dealer_Point-= 10
-                elif Dealer.count("♥A") > 0:
-                    Dealer[Dealer.index("♥A")]="♥A."
-                    Dealer_Point-= 10
-                elif Dealer.count("♦A") > 0:
-                    Dealer[Dealer.index("♦A")]="♦A."
-                    Dealer_Point-= 10
-                elif Dealer.count("♣A") > 0:
-                    Dealer[Dealer.index("♣A")]="♣A."
-                    Dealer_Point-= 10
-                elif len(Dealer) ==5:  #過五關
-                    break
-        print("Dealer Hands:",Dealer,"\t","Ponint=", Dealer_Point)
-        break
-    elif Option == "Surrender":
-        print("YOU LOSE")
-        break
-    else:
-        print("請輸入", "Hit(要牌) or Stand(不要牌) or Surrender(投降)")
-        Option = input()
+    dealer = [] #莊家
+    player = [] #玩家
+    dealer_point = 0 #莊家點數
+    player_point = 0 #玩家點數
+    opt = ""
 
-#判斷勝負  #PUSH平手
-if Option != "Surrender":
-    if len(Player) == 5:
-        if Player_Point <= 21 :
-            if len(Dealer) == 5:
-                print("PUSH")
-            elif Dealer_Point == 21:
-                print("PUSH")
-            else:
-                print("YOU WIN")
-        else:
-            print("YOU LOSE")
-    else:
-        if Dealer_Point <= 21:
-            if Player_Point <= 21:
-                if Player_Point == 21 and len(Dealer) ==5:
-                    print("PUSH")
-                elif Player_Point > Dealer_Point and len(Dealer) !=5:
-                    print("YOU WIN")
-                elif Player_Point == Dealer_Point and len(Dealer) !=5:
-                    print("PUSH")
-                else:
-                    print("YOU LOSE")
-            else:
-                print("YOU LOSE")
-        else:
-            print("YOU WIN")
+    cards = shuffle()
+    start()
+    player_point = point(player)
+    dealer_point = point(dealer)
+    show()
+    deal(dealer) #發給莊家第二張牌(蓋牌狀態)
+    opt = option()
+    print()
+    win(opt)
+    if not play_again():
+        print("BYE BYE ~")
+        break
 
 input("按下 Enter 鍵結束...")
-
-#Play Again?
-
-
-
-"""
